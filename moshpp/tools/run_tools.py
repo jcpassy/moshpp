@@ -34,12 +34,22 @@
 import copy
 import json
 from os import path as osp
+import pkg_resources
 
 import numpy as np
 from human_body_prior.tools.omni_tools import rm_spaces
 from omegaconf import OmegaConf
 
-from moshpp.tools.mocap_interface import MocapSession
+from .mocap_interface import MocapSession
+
+
+def get_support_data_dir(*args, **kwargs):
+
+    support_data_dir = osp.abspath(
+        pkg_resources.resource_filename('moshpp', 'support_data')
+    )
+    assert osp.exists(support_data_dir)
+    return support_data_dir
 
 
 def universal_mosh_jobs_filter(total_jobs, only_stagei=False, determine_shape_for_each_seq=False):
@@ -57,12 +67,16 @@ def universal_mosh_jobs_filter(total_jobs, only_stagei=False, determine_shape_fo
             mocap_key += f'_{mosh_cfg.mocap.session_name}'
             mocap_key += f'_{mosh_cfg.mocap.subject_name}'
 
-        if mocap_key in exclude_keys: continue
-        if osp.exists(mosh_cfg.dirs.stageii_fname): continue  # mosh is complete
+        if mocap_key in exclude_keys:
+            continue
+        if osp.exists(mosh_cfg.dirs.stageii_fname):
+            continue  # mosh is complete
 
         if not osp.exists(mosh_cfg.dirs.stagei_fname) \
-                and not determine_shape_for_each_seq: exclude_keys.append(mocap_key)
-        if only_stagei and osp.exists(mosh_cfg.dirs.stagei_fname): continue
+                and not determine_shape_for_each_seq:
+            exclude_keys.append(mocap_key)
+        if only_stagei and osp.exists(mosh_cfg.dirs.stagei_fname):
+            continue
         filtered_jobs.append(cur_job)
     return filtered_jobs
 
@@ -85,14 +99,16 @@ def turn_fullpose_into_parts(fullpose, surface_model_type):
     return res
 
 
-def resolve_mosh_subject_gender(mocap_fname, fall_back_gender='error', subject_name=None, multi_subject=False):
+def resolve_mosh_subject_gender(mocap_fname, fall_back_gender='error',
+                                subject_name=None, multi_subject=False):
     """
     the gender settings.json file is exptected to have {"gender":<gender>} data for single subject and
     {"subject_name":{"gender":<gender>}} for multi subject case.
     """
     from omegaconf.errors import MissingMandatoryValue
     if multi_subject:
-        if subject_name == '???': raise MissingMandatoryValue('mocap.subject_name')
+        if subject_name == '???':
+            raise MissingMandatoryValue('mocap.subject_name')
         assert subject_name is not None, ValueError(
             f'For multi subject gender resolving the mocap.subject_name should be specified.')
 
@@ -125,7 +141,7 @@ def resolve_mosh_subject_gender(mocap_fname, fall_back_gender='error', subject_n
 def setup_mosh_omegaconf_resolvers():
     """
     ds_name, subject name and mocap basename are automatically extracted from the mocap path.
-    i.e. ...\ds_name\subject_name\mocap_basename.c3d
+    i.e. ...\\ds_name\\subject_name\\mocap_basename.c3d
 
     The subject gender is assumed to be give in a json file inside the subject folder.
     The file should be settings.json and the content as an example should be {'gender': female}
@@ -153,12 +169,14 @@ def setup_mosh_omegaconf_resolvers():
 
     if not OmegaConf.has_resolver('resolve_mocap_subjects'):
         OmegaConf.register_new_resolver('resolve_mocap_subjects',
-                                        lambda mocap_fname: MocapSession(mocap_fname, 'mm').subject_names,
+                                        lambda mocap_fname: MocapSession(
+                                            mocap_fname, 'mm').subject_names,
                                         use_cache=True)
 
     if not OmegaConf.has_resolver('resolve_multi_subject'):
         OmegaConf.register_new_resolver('resolve_multi_subject',
-                                        lambda subject_names, subject_id: len(subject_names) > 1 and subject_id >= 0,
+                                        lambda subject_names, subject_id: len(
+                                            subject_names) > 1 and subject_id >= 0,
                                         use_cache=True)
 
     if not OmegaConf.has_resolver('resolve_mocap_session'):
@@ -177,7 +195,7 @@ def setup_mosh_omegaconf_resolvers():
     if not OmegaConf.has_resolver('resolve_gender'):
         OmegaConf.register_new_resolver('resolve_gender',
                                         lambda mocap_fname, fall_back_gender='error', subject_name=None,
-                                               multi_subject=False:
+                                        multi_subject=False:
                                         resolve_mosh_subject_gender(mocap_fname, fall_back_gender, subject_name,
                                                                     multi_subject),
                                         )  # use_cache=True) # should not use cache, so revaluation based on changed subject id works.

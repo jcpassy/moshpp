@@ -46,7 +46,6 @@ from typing import Union
 import numpy as np
 import torch
 from human_body_prior.tools.omni_tools import flatten_list
-from human_body_prior.tools.omni_tools import get_support_data_dir
 from human_body_prior.tools.omni_tools import makepath
 from loguru import logger
 from omegaconf import DictConfig
@@ -60,6 +59,8 @@ from moshpp.marker_layout.edit_tools import marker_layout_to_c3d
 from moshpp.marker_layout.edit_tools import marker_layout_write
 from moshpp.marker_layout.labels_map import general_labels_map
 from moshpp.tools.run_tools import turn_fullpose_into_parts, setup_mosh_omegaconf_resolvers
+
+from .tools.run_tools import get_support_data_dir
 
 
 class MoSh:
@@ -80,17 +81,23 @@ class MoSh:
                          (f"{self.cfg.mocap.subject_name} -- " if self.cfg.mocap.multi_subject else "") + \
                          f"{{module}}:{{function}}:{{line}} -- {{message}}"
             logger.add(self.cfg.dirs.log_fname, format=log_format, enqueue=True)
-            logger.add(sys.stdout, colorize=True, format=f"<level>{log_format}</level>", enqueue=True)
+            logger.add(
+                sys.stdout,
+                colorize=True,
+                format=f"<level>{log_format}</level>",
+                enqueue=True)
 
         if self.cfg.mocap.multi_subject:
             logger.info('MoCap is multi subject. Available subjects (id:name): {}'.format(
                 {sid: sname for sid, sname in enumerate(self.cfg.mocap.subject_names)}))
-            logger.info(f'mocap.subject_id: {self.cfg.mocap.subject_id} is selected: {self.cfg.mocap.subject_name}')
+            logger.info(
+                f'mocap.subject_id: {self.cfg.mocap.subject_id} is selected: {self.cfg.mocap.subject_name}')
 
         self.stagei_fname = self.cfg.dirs.stagei_fname
         self.stageii_fname = self.cfg.dirs.stageii_fname
 
-        if self.cfg.moshpp.verbosity < 0: return  # this is just a status call
+        if self.cfg.moshpp.verbosity < 0:
+            return  # this is just a status call
 
         logger.info(f'mocap_fname: {self.cfg.mocap.fname}')
 
@@ -110,8 +117,10 @@ class MoSh:
                      f'optimize_betas: {self.cfg.moshpp.optimize_betas}, '
                      f'optimize_dynamics: {self.cfg.moshpp.optimize_dynamics}')
 
-        if self.cfg.surface_model.type in ['smplh', 'smplx', 'mano'] and self.cfg.moshpp.optimize_fingers:
-            logger.debug(f'optimizing for fingers. dof_per_hand = {self.cfg.surface_model.dof_per_hand}')
+        if self.cfg.surface_model.type in ['smplh', 'smplx',
+                                           'mano'] and self.cfg.moshpp.optimize_fingers:
+            logger.debug(
+                f'optimizing for fingers. dof_per_hand = {self.cfg.surface_model.dof_per_hand}')
 
         if self.cfg.surface_model.type in ['smplx', 'flame'] and self.cfg.moshpp.optimize_face:
             logger.debug(
@@ -143,7 +152,8 @@ class MoSh:
             mocap_path_split = osp.basename(self.cfg.mocap.fname).split('.')
             mocap_extension = mocap_path_split[-1]
 
-            # if too much mocaps are available choose stagei_num_frames of them; i.e. one frame per sequence
+            # if too much mocaps are available choose stagei_num_frames of them; i.e.
+            # one frame per sequence
             mocap_fnames = sorted(glob(osp.join(mocap_base_dir, f'*.{mocap_extension}')))
 
             assert len(mocap_fnames) > 0
@@ -151,7 +161,8 @@ class MoSh:
                                       replace=False) if len(
                 mocap_fnames) > self.cfg.moshpp.stagei_frame_picker.num_frames else np.arange(len(mocap_fnames))
             stagei_mocap_fnames = [mocap_fnames[i] for i in mc_ids]
-            logger.debug(f'{len(stagei_mocap_fnames)} subject specific mocap(s) are selected for mosh stagei.')
+            logger.debug(
+                f'{len(stagei_mocap_fnames)} subject specific mocap(s) are selected for mosh stagei.')
 
         logger.debug(
             f'Selecting {frame_picker_cfg.num_frames:d} frames using method {frame_picker_cfg.type} '
@@ -198,7 +209,6 @@ class MoSh:
         return stagei_frames, stagei_fnames
 
     def mosh_stagei(self, mosh_stagei_func):
-
         """
         Fitting shape parameters (betas) of the body model to MoCap data.
         It is assumed that all the MoCap data within a folder are performed by the same mosh_subject, and for each mosh_subject it is meaningful
@@ -227,7 +237,8 @@ class MoSh:
                 self.cfg.moshpp.stagei_frame_picker.stagei_mocap_fnames)
 
             if not osp.exists(self.cfg.dirs.marker_layout.fname):
-                logger.debug(f'Marker layout not available. It will be produced: {self.cfg.dirs.marker_layout.fname}')
+                logger.debug(
+                    f'Marker layout not available. It will be produced: {self.cfg.dirs.marker_layout.fname}')
                 marker_labels_to_marker_layout(chosen_markers=flatten_list([list(d.keys()) for d in stagei_frames]),
                                                marker_layout_fname=self.cfg.dirs.marker_layout.fname,
                                                surface_model_type=self.cfg.surface_model.type,
@@ -267,7 +278,8 @@ class MoSh:
 
     def mosh_stageii(self, mosh_stageii_func):
         if self.stagei_data is None:
-            raise ValueError(f'stagei_fname results could not be found: {self.stagei_fname}. please run stagei first.')
+            raise ValueError(
+                f'stagei_fname results could not be found: {self.stagei_fname}. please run stagei first.')
 
         if osp.exists(self.stageii_fname):
             self.stageii_data = pickle.load(open(self.stageii_fname, 'rb'))
@@ -303,8 +315,9 @@ class MoSh:
     @staticmethod
     def dump_stagei_marker_layout(mosh_stagei_pkl_fname,
                                   out_marker_layout_fname=None,
-                                  template_marker_layout_fname: str= None):
-        assert mosh_stagei_pkl_fname.endswith('.pkl'), ValueError(f'mosh_stagei_pkl_fname should be a valid pkl file: {mosh_stagei_pkl_fname}')
+                                  template_marker_layout_fname: str = None):
+        assert mosh_stagei_pkl_fname.endswith('.pkl'), ValueError(
+            f'mosh_stagei_pkl_fname should be a valid pkl file: {mosh_stagei_pkl_fname}')
         mosh_stagei = pickle.load(open(mosh_stagei_pkl_fname, 'rb'))
 
         marker_meta = MoSh.extract_marker_layout_from_mosh(mosh_stagei,
@@ -323,17 +336,17 @@ class MoSh:
         body_parms = {}
         if 'betas' in mosh_stagei:
             num_betas = mosh_stagei['stagei_debug_details']['cfg']['surface_model']['num_betas']
-            body_parms['betas'] =  torch.Tensor(mosh_stagei['betas'][:num_betas][None])
-            body_parms['num_betas'] =  num_betas
+            body_parms['betas'] = torch.Tensor(mosh_stagei['betas'][:num_betas][None])
+            body_parms['num_betas'] = num_betas
         surface_model_type = mosh_stagei['stagei_debug_details']['cfg']['surface_model']['type']
         marker_layout_as_mesh(surface_model_fname,
                               preserve_vertex_order=True,
                               body_parms=body_parms,
-                              surface_model_type= surface_model_type)(out_marker_layout_fname,output_ply_fname)
+                              surface_model_type=surface_model_type)(out_marker_layout_fname, output_ply_fname)
         marker_layout_to_c3d(out_marker_layout_fname,
                              surface_model_fname=surface_model_fname,
                              out_c3d_fname=output_c3d_fname,
-                             surface_model_type= surface_model_type)
+                             surface_model_type=surface_model_type)
 
         logger.info(f'created {out_marker_layout_fname}')
         logger.info(f'created {output_ply_fname}')
@@ -341,10 +354,10 @@ class MoSh:
 
     @staticmethod
     def load_as_amass_npz_legacy(stageii_pkl_data_or_fname: Union[dict, Union[str, Path]],
-                          stageii_npz_fname: Union[str, Path] = None,
-                          stagei_npz_fname: Union[str, Path] = None,
-                          include_markers: bool = False,
-                          ) -> dict:
+                                 stageii_npz_fname: Union[str, Path] = None,
+                                 stagei_npz_fname: Union[str, Path] = None,
+                                 include_markers: bool = False,
+                                 ) -> dict:
         """
 
                 :param stageii_pkl_data_or_fname:
@@ -358,8 +371,11 @@ class MoSh:
         if isinstance(stageii_pkl_data_or_fname, dict):
             stageii_pkl_data = stageii_pkl_data_or_fname
         else:
-            stageii_pkl_data = pickle.load(open(stageii_pkl_data_or_fname, 'rb'), encoding='latin-1')
-
+            stageii_pkl_data = pickle.load(
+                open(
+                    stageii_pkl_data_or_fname,
+                    'rb'),
+                encoding='latin-1')
 
         cfg = stageii_pkl_data['ps']
         # print(cfg.keys())
@@ -382,7 +398,7 @@ class MoSh:
         if 'vtemplate_fname' in stageii_pkl_data:
             from psbody.mesh import Mesh
             stageii_npz_data['v_template'] = Mesh(filename=stageii_pkl_data['vtemplate_fname']).v
-            stageii_npz_data['v_template_fname'] =stageii_pkl_data['vtemplate_fname']
+            stageii_npz_data['v_template_fname'] = stageii_pkl_data['vtemplate_fname']
 
         optimize_betas = ('vtemplate_fname' not in stageii_pkl_data) and (cfg['betas'] is None)
         if optimize_betas:
@@ -392,21 +408,23 @@ class MoSh:
 
         if cfg['use_dynamics']:
             num_dmpls = cfg['num_dmpls']
-            stageii_npz_data['dmpls'] = stageii_pkl_data['pose_est_dmpls'][:,:num_dmpls]
+            stageii_npz_data['dmpls'] = stageii_pkl_data['pose_est_dmpls'][:, :num_dmpls]
             stageii_npz_data['num_dmpls'] = num_dmpls
 
         if cfg['optimize_face']:
             num_expressions = cfg['num_expr']
-            stageii_npz_data['expression'] = stageii_pkl_data['pose_est_exprs'][:,:num_expressions]
+            stageii_npz_data['expression'] = stageii_pkl_data['pose_est_exprs'][:, :num_expressions]
             stageii_npz_data['num_expressions'] = num_expressions
 
-        part_based_pose = turn_fullpose_into_parts(stageii_pkl_data['pose_est_fullposes'], cfg['fitting_model'])
+        part_based_pose = turn_fullpose_into_parts(
+            stageii_pkl_data['pose_est_fullposes'], cfg['fitting_model'])
         stageii_npz_data.update(part_based_pose)
 
         if include_markers:
             marker_layout_fname = cfg['mrk_settings_fname']
             from moshpp.marker_layout.edit_tools import marker_layout_load
-            marker_meta = marker_layout_load(marker_layout_fname, only_markers=stageii_pkl_data['shape_est_lmlabels'])
+            marker_meta = marker_layout_load(marker_layout_fname,
+                                             only_markers=stageii_pkl_data['shape_est_lmlabels'])
             stageii_npz_data['markers'] = stageii_pkl_data['pose_est_obmrks']
             stageii_npz_data['labels'] = stageii_pkl_data['pose_est_mrk_labels']
 
@@ -440,13 +458,12 @@ class MoSh:
 
         return stageii_npz_data
 
-
     @staticmethod
     def load_as_amass_npz(stageii_pkl_data_or_fname: Union[dict, Union[str, Path]],
                           stageii_npz_fname: Union[str, Path] = None,
                           stagei_npz_fname: Union[str, Path] = None,
                           include_markers: bool = False,
-                          include_extra_details: bool=False,
+                          include_extra_details: bool = False,
                           ) -> dict:
         """
 
@@ -456,7 +473,7 @@ class MoSh:
         :param include_markers:
         :return:
         """
-        setup_mosh_omegaconf_resolvers() # this method could be called on its own
+        setup_mosh_omegaconf_resolvers()  # this method could be called on its own
 
         if isinstance(stageii_pkl_data_or_fname, dict):
             stageii_pkl_data = stageii_pkl_data_or_fname
@@ -500,10 +517,12 @@ class MoSh:
             stageii_npz_data['num_dmpls'] = cfg['surface_model']['num_dmpls']
 
         if cfg.moshpp.optimize_face:
-            stageii_npz_data['expression'] = stageii_pkl_data['expression'][:,:cfg['surface_model']['num_expressions']]
+            stageii_npz_data['expression'] = stageii_pkl_data['expression'][:,
+                                                                            :cfg['surface_model']['num_expressions']]
             stageii_npz_data['num_expressions'] = cfg['surface_model']['num_expressions']
 
-        part_based_pose = turn_fullpose_into_parts(stageii_pkl_data['fullpose'], cfg['surface_model']['type'])
+        part_based_pose = turn_fullpose_into_parts(
+            stageii_pkl_data['fullpose'], cfg['surface_model']['type'])
         stageii_npz_data.update(part_based_pose)
 
         if include_markers:
@@ -544,14 +563,17 @@ class MoSh:
     def prepare_cfg(dict_cfg=None, **kwargs) -> DictConfig:
         setup_mosh_omegaconf_resolvers()
 
-        # todo: make the function accept args and kwarg. for args one can provide list of yaml conf file names
+        # todo: make the function accept args and kwarg. for args one can provide
+        # list of yaml conf file names
         if dict_cfg is None:
             dict_cfg = {}
 
-        app_support_dir = get_support_data_dir(__file__)
+        app_support_dir = get_support_data_dir()
         base_cfg = OmegaConf.load(osp.join(app_support_dir, 'conf/moshpp_conf.yaml'))
 
-        override_cfg_dotlist = [f'{k}={v}' if v != None else f'{k}=null' for k, v in kwargs.items()]
+        override_cfg_dotlist = [
+            f'{k}={v}' if v is not None else f'{k}=null' for k,
+            v in kwargs.items()]
         override_cfg = OmegaConf.from_dotlist(override_cfg_dotlist)
 
         dict_cfg = OmegaConf.create(dict_cfg)
@@ -560,7 +582,7 @@ class MoSh:
 
     @staticmethod
     def extract_marker_layout_from_mosh(mosh_stagei_pkl_fname: Union[str, dict],
-                                        template_marker_layout_fname: str= None) -> dict:
+                                        template_marker_layout_fname: str = None) -> dict:
         if not isinstance(mosh_stagei_pkl_fname, dict):
             mosh_stagei = pickle.load(open(mosh_stagei_pkl_fname, 'rb'))
         else:

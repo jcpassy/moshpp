@@ -38,13 +38,14 @@ import os
 import chumpy as ch
 import numpy as np
 from chumpy import Ch
-from human_body_prior.tools.omni_tools import get_support_data_dir
 from sklearn.neighbors import NearestNeighbors
+
+from .tools.run_tools import get_support_data_dir
 
 
 class TransformedCoeffs(Ch):
     dterms = 'can_body', 'markers_latent'
-    support_base_dir = get_support_data_dir(__file__)
+    support_base_dir = get_support_data_dir()
     smplx_eyebals_path = os.path.join(support_base_dir, 'smplx_eyeballs.npz')
     no_eye_ball_vids = list(
         set(np.arange(10474).tolist()).difference(set(np.load(smplx_eyebals_path)['eyeballs'].tolist())))
@@ -92,7 +93,8 @@ class TransformedCoeffs(Ch):
         self.f1 = nrm(self.e1)
 
         NN_counter = 3
-        while (np.isnan(nrm(ch.cross(self.e1, self.e2)).sum()) and NN_counter < self.closest.shape[0]):
+        while (np.isnan(nrm(ch.cross(self.e1, self.e2)).sum())
+               and NN_counter < self.closest.shape[0]):
             self.e2 = can_body[self.closest[:, NN_counter]] - can_body[self.closest[:, 0]]
             NN_counter += 1
             print('nearest neighbors are on a line, trying to find next neighbor!!')
@@ -101,7 +103,7 @@ class TransformedCoeffs(Ch):
         self.f2 = nrm(ch.cross(self.e1, self.e2))
         self.f3 = ch.cross(self.f1, self.f2)  # normalizing this is redundant
 
-        project = lambda x, y: (ch.sum(x * y, axis=1)).reshape((-1, 1))
+        def project(x, y): return (ch.sum(x * y, axis=1)).reshape((-1, 1))
         self.coefs1 = project(self.diff, self.f1)
         self.coefs2 = project(self.diff, self.f2)
         self.coefs3 = project(self.diff, self.f3)
@@ -154,9 +156,9 @@ class TransformedLms(Ch):
         # f3 = self.transformed_coeffs.f3
 
         self._result = can_body[closest[:, 0]] + \
-                       coeffs[:, 0].reshape((-1, 1)) * f1 + \
-                       coeffs[:, 1].reshape((-1, 1)) * f2 + \
-                       coeffs[:, 2].reshape((-1, 1)) * f3
+            coeffs[:, 0].reshape((-1, 1)) * f1 + \
+            coeffs[:, 1].reshape((-1, 1)) * f2 + \
+            coeffs[:, 2].reshape((-1, 1)) * f3
 
         if '_result' not in self.dterms:
             self.add_dterm('_result', self._result)

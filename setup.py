@@ -32,39 +32,60 @@
 #
 # 2021.06.18
 
+from pathlib import Path
 from setuptools import setup, find_packages
-from glob import glob
 
-setup(name='moshpp',
-      version='3.0',
-      packages=find_packages('src'),
-      package_dir={'': 'src'},
-      include_package_data=True,
-      data_files=[('moshpp/support_data', glob('support_data/*.*')),
-                  ('moshpp/support_data/conf', glob('support_data/conf/*.*')),
-                  ('moshpp/scan2mesh/mesh_distance', glob('src/moshpp/scan2mesh/mesh_distance/*.so')),
+PACKAGE = 'moshpp'
 
-                  ],
 
-      author=['Nima Ghorbani', ],
-      author_email=['nghorbani@tue.mpg.de'],
-      maintainer='Nima Ghorbani',
-      maintainer_email='nghorbani@tue.mpg.de',
-      url='https://github.com/nghorbani/moshpp',
-      description='Solving optical marker-based mocap with millimeter accuracy.',
-      license='See LICENSE',
-      long_description=open("README.md").read(),
-      long_description_content_type="text/markdown",
-      install_requires=['numpy', ],
-      dependency_links=[
-      ],
-      classifiers=[
-          "Intended Audience :: Research",
-          "Natural Language :: English",
-          "Operating System :: POSIX",
-          "Operating System :: POSIX :: BSD",
-          "Operating System :: POSIX :: Linux",
-          "Programming Language :: Python",
-          "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.7", ],
-      )
+def _get_version():
+    """"Helper to get the package version."""
+
+    version_path = Path() / PACKAGE / 'version.py'
+    if not version_path.exists:
+        return None
+    with open(version_path, 'r') as version_file:
+        ns = {}
+        exec(version_file.read(), ns)
+    return ns['__version__']
+
+
+dependencies = [
+    'chumpy',
+    'opencv-python',
+    'matplotlib',
+    'sklearn',
+    'numpy',
+    'loguru',
+    'cython'
+]
+
+setup(
+    name=PACKAGE,
+    version=_get_version(),
+    packages=find_packages(),
+    package_data={
+        PACKAGE: ['support_data/*']
+    },
+    author=['Nima Ghorbani', ],
+    author_email=['nghorbani@tue.mpg.de'],
+    maintainer='Nima Ghorbani',
+    maintainer_email='nghorbani@tue.mpg.de',
+    url='https://github.com/nghorbani/moshpp',
+    description='Solving optical marker-based mocap with millimeter accuracy.',
+    license='See LICENSE',
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    install_requires=['numpy', ],
+    dependency_links=[
+    ],
+    classifiers=[
+        "Intended Audience :: Research",
+        "Natural Language :: English",
+        "Operating System :: POSIX",
+        "Operating System :: POSIX :: BSD",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7", ],
+)
