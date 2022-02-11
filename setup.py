@@ -65,7 +65,7 @@ setup(
     version=_get_version(),
     packages=find_packages(),
     package_data={
-        PACKAGE: ['support_data/*']
+        PACKAGE: ['support_data/**']
     },
     author=['Nima Ghorbani', ],
     author_email=['nghorbani@tue.mpg.de'],
