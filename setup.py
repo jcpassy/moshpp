@@ -33,15 +33,20 @@
 # 2021.06.18
 
 from pathlib import Path
+import platform
 from setuptools import Extension, find_packages, setup
+import sysconfig
+
+import numpy
 
 PACKAGE = 'moshpp'
 
-sourcefiles = ['scan2mesh/mesh_distance/sample2meshdist.pyx']
+# mesh distance python module
+cython_file = Path(__file__).parent / 'moshpp' / 'scan2mesh' / 'mesh_distance' / 'sample2meshdist.pyx'
+sourcefiles = [str(cython_file.resolve())]
 additional_options = {'include_dirs': [numpy.get_include(), '/usr/local/include']}
 
 if platform.system().lower() in ['darwin', 'linux']:
-    import sysconfig
 
     extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
     extra_compile_args += ["-std=c++11"]
@@ -87,10 +92,10 @@ setup(
     license='See LICENSE',
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    install_requires=['numpy', ],
+    install_requires=['numpy'],
     ext_modules=[
         Extension(
-            "scan2mesh.mesh_distance.sample2meshdist",
+            "moshpp.scan2mesh.mesh_distance.sample2meshdist",
             sourcefiles,
             language="c++",
             **additional_options)],
