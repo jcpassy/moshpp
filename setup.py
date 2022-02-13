@@ -65,9 +65,10 @@ setup(
     version=_get_version(),
     packages=find_packages(),
     package_data={
-        PACKAGE: ['support_data/**']
+        PACKAGE: ['support_data/**'],
+        f"{PACKAGE}.scan2mesh.mesh_distance": ['scan2mesh/mesh_distance/sample2meshdist*.so']
     },
-    author=['Nima Ghorbani', ],
+    author=['Nima Ghorbani'],
     author_email=['nghorbani@tue.mpg.de'],
     maintainer='Nima Ghorbani',
     maintainer_email='nghorbani@tue.mpg.de',
