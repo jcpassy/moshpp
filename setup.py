@@ -33,9 +33,19 @@
 # 2021.06.18
 
 from pathlib import Path
-from setuptools import setup, find_packages
+from setuptools import Extension, find_packages, setup
 
 PACKAGE = 'moshpp'
+
+sourcefiles = ['scan2mesh/mesh_distance/sample2meshdist.pyx']
+additional_options = {'include_dirs': [numpy.get_include(), '/usr/local/include']}
+
+if platform.system().lower() in ['darwin', 'linux']:
+    import sysconfig
+
+    extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+    extra_compile_args += ["-std=c++11"]
+    additional_options['extra_compile_args'] = extra_compile_args
 
 
 def _get_version():
@@ -78,8 +88,14 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     install_requires=['numpy', ],
-    dependency_links=[
-    ],
+    ext_modules=[
+        Extension(
+            "scan2mesh.mesh_distance.sample2meshdist",
+            sourcefiles,
+            language="c++",
+            **additional_options)],
+    include_dirs=['.'],
+    dependency_links=[],
     classifiers=[
         "Intended Audience :: Research",
         "Natural Language :: English",
