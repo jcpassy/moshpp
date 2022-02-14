@@ -76,17 +76,13 @@ dependencies = [
     'cython'
 ]
 
-support_data_dir = Path(__file__).parent / PACKAGE / 'support_data'
-support_data_files = [
-    str(p.relative_to(support_data_dir)) for p in support_data_dir.rglob('*')
-]
-
-
 setup(
     name=PACKAGE,
     version=_get_version(),
     packages=find_packages(),
-    package_data={PACKAGE: support_data_files},
+    package_data={
+        PACKAGE: ['support_data/*', 'support_data/conf/*'],
+    },
     author=['Nima Ghorbani'],
     author_email=['nghorbani@tue.mpg.de'],
     maintainer='Nima Ghorbani',
